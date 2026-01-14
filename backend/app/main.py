@@ -17,6 +17,11 @@ app = FastAPI(
 class Message(BaseModel):
     text: str
 
+# Model for command execution requests, defines the structure of commands sent from the frontend to be executed by the assistant
+class CommandRequest(BaseModel):
+    command: str
+    parameters: dict = {} # Optional field with default value
+
 
 # ============================================================================
 # API ENDPOINTS
@@ -41,4 +46,14 @@ async def echo_message(message: Message):
     return {
         "you_said": message.text,
         "response": f"I heard you say: {message.text}"
+    }
+
+# Executes a command from the user, main endpoint for the assistant
+@app.post("/execute-command")
+async def execute_command(request: CommandRequest):
+    return {
+        "status": "success",
+        "command": request.command,
+        "parameters": request.parameters,
+        "message": f"Command '{request.command}' received and queued for execution"
     }
