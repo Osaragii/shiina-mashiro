@@ -60,6 +60,37 @@ async def get_status():
         "version": "0.1.0"
     }
 
+#List all tasks, optionally filtered by status
+@app.get("/tasks")
+async def list_tasks(status: Optional[str] = None):
+    if status:
+        #Filter by status if provided
+        filtered = {k: v for k, v in tasks.items() if v["status"] == status}
+        return {"tasks": list (filtered.values()), "count": len(filtered)}
+    
+    # Return all tasks
+    return {"tasks": list(tasks.values()), "count": len(tasks)}
+
+# Get status of a specific task
+@app.get("/tasks/{task_id}")
+async def get_task(task_id: str):
+    if task_id not in tasks:
+        return {"error": "Task not found", "task_id": task_id}
+    
+    return tasks[task_id]
+
+# Cancel a pending task
+@app.delete("/tasks/{task_id}")
+async def cancel_task(task_id: str):
+    if task_id not in tasks:
+        return {"error": "Task not found"}
+    
+    if tasks[task_id]["status"] == "completed":
+        return {"error": "Cannot cancel completed task"}
+    
+    tasks[task_id]["status"] = "cancelled"
+    return {"message": "Task cancelled", "task_id": task_id}
+
 # Executes a command from the user and creates a task to track it
 @app.post("/execute-command")
 async def execute_command(request: CommandRequest):
