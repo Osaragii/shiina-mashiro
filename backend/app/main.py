@@ -93,7 +93,7 @@ async def cancel_task(task_id: str):
 
 # Executes a command from the user and creates a task to track it
 @app.post("/execute-command")
-async def execute_command(request: CommandRequest):
+async def execute_command_endpoint(request: CommandRequest):
     global task_counter
 
     # Generate unique task id
@@ -105,15 +105,25 @@ async def execute_command(request: CommandRequest):
         "task_id": task_id,
         "command": request.command,
         "parameters": request.parameters,
-        "status": "pending", # Will be "running" when executing and "completed" when done
+        "status": "running", # Will be "running" when executing and "completed" when done
         "created_at": datetime.now().isoformat(),
         "result": None
     }
 
     # Store task in memory
     tasks[task_id] = task
+
+    # Executes the command
+    from executor import execute_command
+    execution_result = execute_command(request.command, request.parameters)
+
+    # Update task with result
+    tasks[task_id]["result"] = execution_result
+    tasks[task_id]["status"] = "completed" if execution_result.get("success") else "failed"
+
     return {
-        "status": "queued",
+        "status": "completed" if execution_result.get("success") else "failed",
         "task_id": task_id,
-        "message": f"Got it! I'll '{request.command}' for you right away"
+        "message": f"Got it! I'll '{request.command}' for you right away",
+        "result": execution_result
     }
