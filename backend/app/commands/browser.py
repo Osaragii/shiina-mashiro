@@ -3,14 +3,17 @@
 import subprocess
 import platform
 from typing import Dict, Any
+from ..config import (
+    config,
+)  # It is in the app directory not in the backend directory so we cannot import directly, either app.config or ..config
 
 
 # Opens default browser and navigates to URL.
-def open_browser(url: str = "https://google.com") -> Dict[str, Any]:
+def open_browser(url: str = None) -> Dict[str, Any]:
     try:
         # Add https:// if not present
-        if not url.startswith(("http://", "https://")):
-            url = f"https://{url}"
+        if url is None:
+            url = config.DEFAULT_BROWSER_URL
 
         # Platform-specific browser opening
         system = platform.system()

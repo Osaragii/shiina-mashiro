@@ -4,15 +4,17 @@ import pyautogui
 import subprocess
 import platform
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, Any, Optional
+from ..config import (
+    config,
+)  # It is in the app directory not in the backend directory so we cannot import directly, either app.config or ..config
 
 
 # Takes a screenshot and saves it
 def take_screenshot(filename: Optional[str] = None) -> Dict[str, Any]:
     try:
         # Create screenshots directory if it does not exist
-        screenshots_dir = Path("Screenshots")
+        screenshots_dir = config.SCREENSHOTS_DIR
         screenshots_dir.mkdir(exist_ok=True)
 
         # Generate filename if not provided
