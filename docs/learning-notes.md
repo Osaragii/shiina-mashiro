@@ -587,3 +587,222 @@ screenshots/       # User data
 - Professional dev practices
 
 ---
+
+## Day 9: Logging System
+
+### The Problem: No Visibility
+
+**Before logging:**
+```python
+screenshot() # Did it work? No idea!
+```
+
+**After logging:**
+```
+[15:30:45] INFO - Taking screenshot: screenshot_20260207_153045.png
+[15:30:46] INFO - Screenshot saved successfully
+```
+
+### What We Built
+**Created logging infrastructure:**
+```
+backend/app/utils/
+├── __init__.py
+└── logger.py           ← Logging system
+```
+
+**Log files created:**
+```
+backend/logs/
+└── shiina_20260207.log  ← Daily log files
+```
+
+### How Logging Works
+
+**1. Setup (utils/logger.py):**
+```python
+import logging
+from logging.handlers import RotatingFileHandler
+
+def setup_logger():
+    logger = logging.getLogger("shiina")
+
+    # File handler - saves to logs/
+    file_handler = RotatingFileHandler(
+        log_file,
+        maxBytes=10 * 1024 * 1024, # 10MB max
+        backupCount = 5            # Keep 5 old logs
+    )
+
+    # Console handler - shows in terminal
+    console_handler = logging.StreamHandler()
+
+    return logger
+```
+
+**2. Usage (in commands)*:*
+```python
+from ..utils import logger
+
+def screenshot():
+    logger.info(f"Screenshot saved: {filepath}")
+    logger.debug(f"File size: {size} MB") # Only in DEBUG mode
+```
+
+### Log Levels
+
+**4 levels from least to most severe:**
+
+**DEBUG** - Detailed info for developers
+```python
+logger.debug(f"Using system: {platform.system()}")
+logger.debug(f"File size: 2.3 MB")
+```
+
+**INFO** - General operational messages
+```python
+logger.info("Opening browser to github.com")
+logger.info("Screenshot saved successfully")
+```
+
+**WARNING** - Something unusual but not broken
+
+```python
+logger.warning("Screenshot folder does not exist, creating...")
+logger.warning("Using default URL, none provided")
+```
+
+**ERROR** - Something failed
+```python
+logger.error("Failed to open browser: Permission denied")
+logger.error(f"Screenshot failed: {error}")
+```
+
+### Configuration (.env)
+
+**Log settings:**
+```env
+LOG_LEVEL=INFO              # DEBUG, INFO, WARNING, ERROR
+LOG_TO_FILE=true            # Save to file?
+LOG_TO_CONSOLE=true         # Show in terminal?
+LOGS_DIR=logs               # Where to save logs
+```
+
+**Change LOG_LEVEL to DEBUG for more details:**
+```env
+LOG_LEVEL=DEBUG  # Shows debug() messages too
+```
+
+### Rotating File Handler
+
+**Why Rotating?**
+- Logs can get huge over time
+- Old logs are backed up automatically
+- Only keeps 5 most recent files
+
+**How it works:**
+```
+shiina_20260207.log        ← Current (8 MB)
+shiina_20260207.log.1      ← Yesterday (10 MB - full)
+shiina_20260207.log.2      ← 2 days ago (10 MB)
+shiina_20260207.log.3      ← 3 days ago (10 MB)
+shiina_20260207.log.4      ← 4 days ago (10 MB)
+shiina_20260207.log.5      ← 5 days ago (10 MB - oldest)
+```
+
+When current reaches 10 MB:
+1. `.5` gets deleted (oldest)
+2. `.4` → `.5`, `.3` → `.4`, `.2` → `.3`, `.1` → `.2`
+3. Current → `.1`
+4. New current created
+
+### Log Format
+
+**Console (simple):**
+```
+[15:30:45] INFO     - Opening browser to github.com
+[15:30:46] ERROR    - Screenshot failed: Permission denied
+```
+
+**File (detailed):**
+```
+[2026-02-07 15:30:45] INFO     [shiina.open_browser:42] - Opening browser to github.com
+[2026-02-07 15:30:46] ERROR    [shiina.screenshot:78] - Screenshot failed: Permission denied
+```
+
+File format includes:
+- Full timestamp
+- Log level
+- Module name
+- Function name
+- Line number
+- Message
+
+### Benefits
+
+**Debugging:**
+```
+User: "It did not work!"
+Dev: *checks logs*
+[ERROR] Screenshot failed: Permission denied at C:\Windows\
+```
+→ Instantly see the problem!
+
+**Monitoring:**
+```
+[INFO] Browser opened 42 times today
+[INFO] Screenshot taken 18 times today
+```
+→ Track usage patterns
+
+**Audit Trail:**
+```
+[15:30] Opened browser: github.com
+[15:31] Took screenshot
+[15:32] Opened notepad
+```
+→ See what Shiina did and when
+
+### Key Concepts
+
+**1. Centralized Logging:**
+- One logger for entire app
+- Consistent format everywhere
+- Easy to configure
+
+**2. Multiple Outputs:**
+- Terminal (for live monitoring)
+- File (for debugging later)
+
+**3. Log Rotation**
+- Prevents disk space issues
+- Keeps history manageable
+
+**4. Configuration-Driven:**
+- Change behaviour via .env
+- No code changes needed
+
+### Updated All Commands
+
+**Every command now logs:**
+- When it starts
+- What it is doing
+- Success/Failure
+- Important details
+
+**Example - screenshot():**
+```python
+logger.info(f"Taking screenshot: {filename}")  # Starting
+# ... take screenshot ...
+logger.info(f"Screenshot saved: {filepath}")   # Success
+logger.debug(f"File size: {size} MB")          # Details
+```
+
+**Example - open_browser():**
+```python
+logger.info(f"Opening browser to: {url}")      # Starting
+# ... open browser ...
+logger.info(f"Browser opened successfully")    # Success
+```
+
+---
