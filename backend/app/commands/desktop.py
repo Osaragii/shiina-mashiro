@@ -5,6 +5,7 @@ import subprocess
 import platform
 from datetime import datetime
 from typing import Dict, Any, Optional
+from ..utils import logger
 from ..config import (
     config,
 )  # It is in the app directory not in the backend directory so we cannot import directly, either app.config or ..config
@@ -28,9 +29,14 @@ def take_screenshot(filename: Optional[str] = None) -> Dict[str, Any]:
 
         filepath = screenshots_dir / filename
 
+        logger.info(f"Taking screenshot: {filename}")
+
         # Take screenshot
         screenshot = pyautogui.screenshot()
         screenshot.save(str(filepath))
+
+        logger.info(f"Screenshot saved: {filepath}")
+        logger.debug(f"Screenshot size: {filepath.stat().st_size / 1024 / 1024:.2f} MB")
 
         return {
             "success": True,
@@ -41,6 +47,7 @@ def take_screenshot(filename: Optional[str] = None) -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"Screenshot failed: {str(e)}")
         return {"success": False, "error": str(e), "action": "screenshot_failed"}
 
 
@@ -49,6 +56,8 @@ def take_screenshot(filename: Optional[str] = None) -> Dict[str, Any]:
 
 def open_application(app_name: str) -> Dict[str, Any]:
     try:
+        logger.info(f"Opening Application: {app_name}")
+
         system = platform.system()
 
         # Common application mappings
@@ -71,6 +80,8 @@ def open_application(app_name: str) -> Dict[str, Any]:
         else:  # Linux
             subprocess.Popen([actual_app])
 
+        logger.info(f"Application opened successfully: {app_name}")
+
         return {
             "success": True,
             "action": "application_opened",
@@ -80,6 +91,7 @@ def open_application(app_name: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"Failed to open application {app_name}: {str(e)}")
         return {
             "success": False,
             "error": str(e),
@@ -91,6 +103,9 @@ def open_application(app_name: str) -> Dict[str, Any]:
 # Types text using keyboard automation
 def type_text(text: str) -> Dict[str, Any]:
     try:
+        logger.info(f"Typing text ({len(text)} characters)")
+        logger.debug(f"Text content: {text[:50]}...")  # First 50 chars
+
         pyautogui.write(text, interval=0.05)  # 0.05 seconds between keystrokes
 
         return {
@@ -102,4 +117,5 @@ def type_text(text: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"Type text failed: {str(e)}")
         return {"success": False, "error": str(e), "action": "type_text_failed"}

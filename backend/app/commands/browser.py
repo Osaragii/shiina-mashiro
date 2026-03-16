@@ -1,8 +1,10 @@
 # Browser Automation Commands, handles browser control, navigation, and web interactions
 
+from datetime import datetime
 import subprocess
 import platform
 from typing import Dict, Any
+from ..utils import logger
 from ..config import (
     config,
 )  # It is in the app directory not in the backend directory so we cannot import directly, either app.config or ..config
@@ -15,6 +17,11 @@ def open_browser(url: str = None) -> Dict[str, Any]:
         if url is None:
             url = config.DEFAULT_BROWSER_URL
 
+        if not url.startswith(("https://", "http://")):
+            url = f"https://{url}"
+
+        logger.info(f"Opening browser to: {url}")
+
         # Platform-specific browser opening
         system = platform.system()
 
@@ -25,15 +32,30 @@ def open_browser(url: str = None) -> Dict[str, Any]:
         else:  # Linux
             subprocess.Popen(["xdg-open", url])
 
-        return {"success": False, "action": "browser_opened", "url": url}
+        logger.info(f"Browser opened successfully: {url}")
+
+        return {
+            "success": True,
+            "action": "browser_opened",
+            "url": url,
+            "timestamp": datetime.now().isoformat(),
+        }
 
     except Exception as e:
-        return {"success": False, "error": str(e), "action": "browser_open_failed"}
+        logger.error(f"Failed to open browser: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "action": "browser_open_failed",
+            "url": url,
+        }
 
 
 # Opens Google search with the given query.
 def search_google(query: str) -> Dict[str, Any]:
     try:
+        logger.info(f"Searching Google for: {query}")
+
         # URL encode the query
         import urllib.parse
 
@@ -48,6 +70,7 @@ def search_google(query: str) -> Dict[str, Any]:
         return result
 
     except Exception as e:
+        logger.error(f"Google search failed: {str(e)}")
         return {
             "success": False,
             "error": str(e),
@@ -60,11 +83,13 @@ def search_google(query: str) -> Dict[str, Any]:
 def open_youtube(search: str = None) -> Dict[str, Any]:
     try:
         if search:
+            logger.info(f"Opening YouTube with search: {search}")
             import urllib.parse
 
             encoded_search = urllib.parse.quote(search)
             url = f"https://www.youtube.com/results?search_query={encoded_search}"
         else:
+            logger.info("Opening YouTube homepage")
             url = "https://www.youtube.com"
 
         result = open_browser(url)
@@ -76,4 +101,5 @@ def open_youtube(search: str = None) -> Dict[str, Any]:
         return result
 
     except Exception as e:
+        logger.error(f"YouTube open failed: {str(e)}")
         return {"success": False, "error": str(e), "action": "youtube_open_failed"}
